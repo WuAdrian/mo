@@ -1,0 +1,47 @@
+name: Update
+
+on:
+  push:
+  schedule:
+    - cron: '0 1 */2 * *'
+
+env:
+  TZ: Asia/Shanghai
+
+jobs:
+  Update:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: GetTime
+      run: echo "GET_TIME=$(date +'%Y-%m-%d %H:%M:%S CST')" >> $GITHUB_ENV
+
+        
+    - name: Update    
+      run: |
+        
+        # 整合源
+        rm -f m.txt && wget https://raw.githubusercontent.com/WuAdrian/source/main/tv.m3u -O m.txt
+        #sed -i '/#EXTM3U/d' m.txt
+        #sed -i '1i #EXTM3U' m.txt
+        sed -i '/^\s*$/d' m.txt
+        sed -i 's/-50-FPS$//g' m.txt
+        sed -i 's/-HEVC$//g' m.txt
+        sed -i 's/-高码$//g' m.txt
+        sed -i 's/192.168.100.55/debian.wurunxiang.top/g' m.txt
+        sed -i 's|https://epg.v1.mk/fy.xml|https://raw.githubusercontent.com/WuAdrian/source/main/tv.xml|g' m.txt
+
+    - name: Clean
+      run: |
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        git checkout --orphan latest_branch
+        git add -A
+        git commit -am "${GET_TIME}"
+        git branch -D main
+        git branch -m main
+
+    - name: Push
+      run: git push -f origin main
